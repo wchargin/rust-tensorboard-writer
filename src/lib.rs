@@ -1,3 +1,9 @@
+pub mod proto {
+    pub mod tensorboard {
+        include!("tensorboard.pb.rs");
+    }
+}
+
 pub fn add(left: usize, right: usize) -> usize {
     left + right
 }
