@@ -54,11 +54,24 @@ impl SummaryBuilder {
 
     /// Adds a histogram summary, linearly bucketing the given `values` into the given number of
     /// `bins`.
-    pub fn histogram(self, tag: &str, bins: usize, values: &[f64]) -> Self {
+    ///
+    /// The `values` may be `f32`s or `f64`s, or any type that can be copied into an `f64`.
+    pub fn histogram<T>(self, tag: &str, bins: usize, values: &[T]) -> Self
+    where
+        T: Into<f64> + Copy,
+    {
         let mut histo = pb::HistogramProto::default();
         if !values.is_empty() && bins > 0 {
-            histo.min = values.iter().copied().min_by(f64::total_cmp).unwrap();
-            histo.max = values.iter().copied().max_by(f64::total_cmp).unwrap();
+            histo.min = values
+                .iter()
+                .map(|z| Into::<f64>::into(*z))
+                .min_by(f64::total_cmp)
+                .unwrap();
+            histo.max = values
+                .iter()
+                .map(|z| Into::<f64>::into(*z))
+                .max_by(f64::total_cmp)
+                .unwrap();
             // `bucket` has the counts in each bucket
             histo.bucket = vec![0.0; bins];
             // `bucket_limit` has the right edge of each bucket
@@ -69,8 +82,8 @@ impl SummaryBuilder {
                     .bucket_limit
                     .push(histo.min + (i + 1) as f64 * bucket_width);
             }
-            for &z in values {
-                let idx = f64::floor((z - histo.min) / bucket_width);
+            for z in values {
+                let idx = f64::floor((Into::<f64>::into(*z) - histo.min) / bucket_width);
                 // Clamp in case of any floating point weirdness.
                 let idx = idx.clamp(0.0, (bins - 1) as f64);
                 histo.bucket[idx as usize] += 1.0;
