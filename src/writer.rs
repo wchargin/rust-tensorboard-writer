@@ -61,7 +61,7 @@ impl<W: Write> Writer<W> {
     /// Writes a file version header event. This reads the current system time.
     pub fn write_file_version(&mut self) -> io::Result<()> {
         const FILE_VERSION: &str = "brain.Event:2";
-        const WRITER: &str = "rust:wchargin/tensorboard-writer";
+        const WRITER: &str = "wchargin/rust-tensorboard-writer";
 
         let mut event = pb::Event::default();
         event.wall_time = time_f64(SystemTime::now())?;
