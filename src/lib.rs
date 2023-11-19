@@ -4,6 +4,10 @@ pub mod proto {
     }
 }
 
+pub mod masked_crc;
+mod scripted_reader;
+pub mod tf_record;
+
 pub fn add(left: usize, right: usize) -> usize {
     left + right
 }
