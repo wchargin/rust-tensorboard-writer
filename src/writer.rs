@@ -20,6 +20,13 @@ impl<W> TensorboardWriter<W> {
     }
 }
 
+fn time_f64(time: SystemTime) -> std::io::Result<f64> {
+    Ok(time
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(io::Error::other)?
+        .as_secs_f64())
+}
+
 impl<W: Write> TensorboardWriter<W> {
     /// Writes a raw TFRecord to the output stream. You may find it more convenient to use
     /// [`write_event`][Self::write_event] instead, which computes the record checksum for you.
@@ -34,6 +41,20 @@ impl<W: Write> TensorboardWriter<W> {
         self.write_record(&record)
     }
 
+    /// Writes a file version header event. This reads the current system time.
+    pub fn write_file_version(&mut self) -> io::Result<()> {
+        const FILE_VERSION: &str = "brain.Event:2";
+        const WRITER: &str = "rust:wchargin/tensorboard-writer";
+
+        let mut event = pb::Event::default();
+        event.wall_time = time_f64(SystemTime::now())?;
+        event.what = Some(pb::event::What::FileVersion(FILE_VERSION.to_string()));
+        let mut source_metadata = pb::SourceMetadata::default();
+        source_metadata.writer = WRITER.to_string();
+        event.source_metadata = Some(source_metadata);
+        self.write_event(&event)
+    }
+
     /// Writes a summary to the output stream, wrapped in an `Event` with the given step and wall
     /// time.
     pub fn write_summary(
@@ -43,10 +64,7 @@ impl<W: Write> TensorboardWriter<W> {
         summary: pb::Summary,
     ) -> io::Result<()> {
         let mut event = pb::Event::default();
-        event.wall_time = wall_time
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_err(io::Error::other)?
-            .as_secs_f64();
+        event.wall_time = time_f64(wall_time)?;
         event.step = step;
         event.what = Some(pb::event::What::Summary(summary));
         self.write_event(&event)
