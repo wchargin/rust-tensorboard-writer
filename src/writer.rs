@@ -6,6 +6,12 @@ use prost::Message;
 use crate::proto::tensorboard as pb;
 use crate::tf_record::TfRecord;
 
+/// Utility for writing TensorBoard event files.
+///
+/// A TensorBoard event file contains a sequence of (raw, undelimited) TFRecords. The data of each
+/// TFRecord should be a serialized [`tensorboard.Event`][pb::Event] protocol buffer. Most events
+/// contain summary values; you can use the [`SummaryBuilder`][crate::SummaryBuilder] utility to
+/// build those.
 pub struct Writer<W> {
     writer: W,
 }
@@ -68,6 +74,9 @@ impl<W: Write> Writer<W> {
 
     /// Writes a summary to the output stream, wrapped in an `Event` with the given step and wall
     /// time.
+    ///
+    /// You may find it helpful to use the [`SummaryBuilder`][crate::SummaryBuilder] utility to
+    /// construct the `summary` value.
     pub fn write_summary(
         &mut self,
         wall_time: SystemTime,

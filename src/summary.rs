@@ -1,20 +1,40 @@
 use super::proto::tensorboard as pb;
 use pb::summary::value::Value as InnerValue;
 
+/// Builder for constructing TensorBoard `Summary` protocol buffers.
+///
+/// To use this builder, construct an instance with [`new`][Self::new], chain builder methods like
+/// [`scalar`][Self::scalar] and [`histogram`][Self::histogram], and then retrieve the underlying
+/// summary value with [`build`][Self::build]:
+///
+/// ```
+/// use tensorboard_writer::SummaryBuilder;
+///
+/// let summ: SummaryBuilder::new()
+///     .scalar("loss", 123.0)
+///     .histogram("weights/layer1", NUM_HISTOGRAM_BINS, &weights_layer1)
+///     .build();
+/// ```
+///
+/// For more precise control over the values created, you can use the [`value`][Self::value]
+/// builder to pass a raw TensorBoard `Summary.Value` protobuf that you've prepared ahead of time.
 #[derive(Default)]
 pub struct SummaryBuilder {
     summary: pb::Summary,
 }
 
 impl SummaryBuilder {
+    /// Creates an empty summary with no values.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Finishes this builder and returns the summary that's been constructed.
     pub fn build(self) -> pb::Summary {
         self.summary
     }
 
+    /// Adds an arbitrary [`tensorboard.Summary.Value`][pb::summary::Value] protobuf value.
     pub fn value(mut self, value: pb::summary::Value) -> Self {
         self.summary.value.push(value);
         self
@@ -27,10 +47,13 @@ impl SummaryBuilder {
         self.value(outer)
     }
 
+    /// Adds a scalar summary.
     pub fn scalar(self, tag: &str, scalar: f32) -> Self {
         self.tag_and_inner_value(tag, InnerValue::SimpleValue(scalar))
     }
 
+    /// Adds a histogram summary, linearly bucketing the given `values` into the given number of
+    /// `bins`.
     pub fn histogram(self, tag: &str, bins: usize, values: &[f64]) -> Self {
         let mut histo = pb::HistogramProto::default();
         if !values.is_empty() && bins > 0 {

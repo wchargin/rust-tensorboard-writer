@@ -80,6 +80,10 @@
 //! # }
 //! ```
 
+/// Direct access to the TensorBoard protocol buffers.
+///
+/// You may need these if you want to drop below the high-level wrappers offered by
+/// [`SummaryBuilder`].
 pub mod proto {
     pub mod tensorboard {
         include!("tensorboard.pb.rs");
