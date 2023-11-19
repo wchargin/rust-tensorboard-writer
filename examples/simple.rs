@@ -27,8 +27,8 @@ fn main() -> std::io::Result<()> {
     for step in 0..STEPS {
         // get your values from somewhere... here, we just make them up
         let loss: f32 = 10.0 / (step + 1) as f32;
-        let weights_layer1: [f64; 10000] = normal(step as f64, 10.0 / (step as f64 + 1.0).sqrt());
-        let weights_final: [f64; 10000] = normal(3.0, 10.0);
+        let weights_layer1 = normal(10000, step as f64, 10.0 / (step as f64 + 1.0).sqrt());
+        let weights_final = normal(10000, 3.0, 10.0);
 
         const NUM_HISTOGRAM_BINS: usize = 30;
         let summ = SummaryBuilder::new()
@@ -55,8 +55,12 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn normal<const N: usize>(mu: f64, sigma: f64) -> [f64; N] {
+fn normal(n: usize, mu: f64, sigma: f64) -> Vec<f64> {
     let mut rng = rand::thread_rng();
     let dist = rand_distr::Normal::new(mu, sigma).unwrap();
-    std::array::from_fn(|_| dist.sample(&mut rng))
+    let mut result = Vec::with_capacity(n);
+    for _ in 0..n {
+        result.push(dist.sample(&mut rng));
+    }
+    result
 }
