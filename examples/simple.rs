@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::BufWriter;
+use std::io::{BufWriter, Write};
 use std::time::{Duration, SystemTime};
 
 use rand::prelude::*;
@@ -42,6 +42,7 @@ fn main() -> std::io::Result<()> {
 
         // Write summaries to file.
         writer.write_summary(fake_time, step as i64, summ)?;
+        writer.get_mut().flush()?;
     }
 
     // Make sure we can flush to disk without error.

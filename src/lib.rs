@@ -54,7 +54,7 @@
 //!
 //! ```no_run
 //! use std::fs::File;
-//! use std::io::BufWriter;
+//! use std::io::{BufWriter, Write};
 //! use std::time::SystemTime;
 //!
 //! use tensorboard_writer::{TensorboardWriter, SummaryBuilder};
@@ -72,6 +72,9 @@
 //!         .histogram("weights", 30, &[0.123, 0.234, 0.345])
 //!         .build();
 //!     writer.write_summary(SystemTime::now(), step, summ)?;
+//!     // flush the underlying `BufWriter` at each step
+//!     // so that results show up in TensorBoard immediately
+//!     writer.get_mut().flush()?;
 //! }
 //! # Ok(())
 //! # }
