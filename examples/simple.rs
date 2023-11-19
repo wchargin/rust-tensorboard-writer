@@ -36,12 +36,9 @@ fn main() -> std::io::Result<()> {
             .histogram("weights/layer1", NUM_HISTOGRAM_BINS, &weights_layer1)
             .histogram("weights/final", NUM_HISTOGRAM_BINS, &weights_final)
             .build();
-        // (real code should use `SystemTime::now()` here; we add an offset so that the graphs are
-        // slightly more interesting)
-        let fake_time = SystemTime::now() + Duration::from_secs(step as u64);
 
         // Write summaries to file.
-        writer.write_summary(fake_time, step as i64, summ)?;
+        writer.write_summary(SystemTime::now(), step as i64, summ)?;
         writer.get_mut().flush()?;
 
         println!("finished training step {}", step);
