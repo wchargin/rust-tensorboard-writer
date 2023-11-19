@@ -43,6 +43,10 @@ fn main() -> std::io::Result<()> {
         // Write summaries to file.
         writer.write_summary(fake_time, step as i64, summ)?;
         writer.get_mut().flush()?;
+
+        println!("finished training step {}", step);
+        // Simulate training taking a while, so that you can see your TensorBoard updating live.
+        std::thread::sleep(Duration::from_millis(250));
     }
 
     // Make sure we can flush to disk without error.
