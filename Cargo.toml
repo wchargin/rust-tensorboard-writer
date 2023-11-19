@@ -8,3 +8,4 @@ edition = "2018"
 [dependencies]
 crc = "1.8.1"
 prost = "0.9.0"
+thiserror = "1.0.21"
