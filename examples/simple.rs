@@ -4,7 +4,7 @@ use std::time::{Duration, SystemTime};
 
 use rand::prelude::*;
 
-use tensorboard_writer as tw;
+use tensorboard_writer::{SummaryBuilder, TensorboardWriter};
 
 fn main() -> std::io::Result<()> {
     let outfile = std::env::args_os().nth(1).unwrap_or_else(|| {
@@ -15,10 +15,14 @@ fn main() -> std::io::Result<()> {
         eprintln!("warn: filenames must include 'tfevents' to show up in TensorBoard");
     }
 
+    // Open a file and bind a writer to it.
     let writer = BufWriter::new(File::create(outfile)?);
-    let mut writer = tw::writer::TensorboardWriter::new(writer);
+    let mut writer = TensorboardWriter::new(writer);
 
+    // Write a file header---not strictly necessary, but useful for troubleshooting.
     writer.write_file_version()?;
+
+    // Go through your training loop, and at each step log some TensorBoard summaries...
     const STEPS: usize = 50;
     for step in 0..STEPS {
         // get your values from somewhere... here, we just make them up
@@ -27,13 +31,17 @@ fn main() -> std::io::Result<()> {
         let weights_final: [f64; 10000] = normal(3.0, 10.0);
 
         const NUM_HISTOGRAM_BINS: usize = 30;
-        let sum = tw::summary::SummaryBuilder::new()
+        let summ = SummaryBuilder::new()
             .scalar("loss", loss)
             .histogram("weights/layer1", NUM_HISTOGRAM_BINS, &weights_layer1)
             .histogram("weights/final", NUM_HISTOGRAM_BINS, &weights_final)
             .build();
+        // (real code should use `SystemTime::now()` here; we add an offset so that the graphs are
+        // slightly more interesting)
         let fake_time = SystemTime::now() + Duration::from_secs(step as u64);
-        writer.write_summary(fake_time, step as i64, sum)?;
+
+        // Write summaries to file.
+        writer.write_summary(fake_time, step as i64, summ)?;
     }
 
     // Make sure we can flush to disk without error.

@@ -6,11 +6,11 @@ use prost::Message;
 use crate::proto::tensorboard as pb;
 use crate::tf_record::TfRecord;
 
-pub struct TensorboardWriter<W> {
+pub struct Writer<W> {
     writer: W,
 }
 
-impl<W> TensorboardWriter<W> {
+impl<W> Writer<W> {
     pub fn new(writer: W) -> Self {
         Self { writer }
     }
@@ -27,7 +27,7 @@ fn time_f64(time: SystemTime) -> std::io::Result<f64> {
         .as_secs_f64())
 }
 
-impl<W: Write> TensorboardWriter<W> {
+impl<W: Write> Writer<W> {
     /// Writes a raw TFRecord to the output stream. You may find it more convenient to use
     /// [`write_event`][Self::write_event] instead, which computes the record checksum for you.
     pub fn write_record(&mut self, record: &TfRecord) -> io::Result<()> {

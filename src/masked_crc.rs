@@ -53,7 +53,7 @@ impl MaskedCrc {
     /// # Examples
     ///
     /// ```
-    /// use tensorboard_writer::masked_crc::MaskedCrc;
+    /// use tensorboard_writer::MaskedCrc;
     ///
     /// // Checksum extracted from real TensorFlow event file with record:
     /// // tf.compat.v1.Event(file_version=b"CRC test, one two")
