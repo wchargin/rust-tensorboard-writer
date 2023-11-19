@@ -14,6 +14,10 @@ impl<W> TensorboardWriter<W> {
     pub fn new(writer: W) -> Self {
         Self { writer }
     }
+
+    pub fn into_inner(self) -> W {
+        self.writer
+    }
 }
 
 impl<W: Write> TensorboardWriter<W> {
