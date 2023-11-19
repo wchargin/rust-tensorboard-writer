@@ -1,11 +1,16 @@
 use super::proto::tensorboard as pb;
 use pb::summary::value::Value as InnerValue;
 
+#[derive(Default)]
 pub struct SummaryBuilder {
     summary: pb::Summary,
 }
 
 impl SummaryBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     pub fn build(self) -> pb::Summary {
         self.summary
     }
