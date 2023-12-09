@@ -9,4 +9,4 @@ See Rustdoc or the `examples/` directory for details.
 Several files here are pulled from TensorBoard, which is licensed under
 Apache-2.0. (All of those files are either generated or I was the one who
 originally wrote them, but Apache-2.0 is still a reasonable, conservative
-interpretation.)
+interpretation.) I license all of my contributions under Apache-2.0 as well.
