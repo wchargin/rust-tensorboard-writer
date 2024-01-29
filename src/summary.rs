@@ -10,6 +10,7 @@ use pb::summary::value::Value as InnerValue;
 /// ```
 /// use tensorboard_writer::SummaryBuilder;
 ///
+/// # let weights_layer1 = [1.0, 2.0, 3.0];
 /// let summ = SummaryBuilder::new()
 ///     .scalar("loss", 123.0)
 ///     .histogram("weights/layer1", 30, &weights_layer1)
