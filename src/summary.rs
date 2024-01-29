@@ -41,16 +41,91 @@ impl SummaryBuilder {
         self
     }
 
-    fn tag_and_inner_value(self, tag: &str, inner: InnerValue) -> Self {
+    fn build_value(self, tag: &str, inner: InnerValue, meta: Option<pb::SummaryMetadata>) -> Self {
         let mut outer = pb::summary::Value::default();
         outer.tag = tag.to_string();
         outer.value = Some(inner);
+        outer.metadata = meta;
         self.value(outer)
     }
 
     /// Adds a scalar summary.
     pub fn scalar(self, tag: &str, scalar: f32) -> Self {
-        self.tag_and_inner_value(tag, InnerValue::SimpleValue(scalar))
+        self.build_value(tag, InnerValue::SimpleValue(scalar), None)
+    }
+
+    /// Adds a rank-0 text summary with a single string. The text is interpreted as Markdown.
+    ///
+    /// This can be used to log actual model outputs (e.g., predictions on some sample data at each
+    /// step) or just as a general "escape hatch" to dump any human-readable data to TensorBoard.
+    pub fn text<T: AsRef<[u8]>>(self, tag: &str, text: &T) -> Self {
+        self.text_ndarray(tag, &[text], &[])
+    }
+
+    /// Adds a text summary with a string or tensor of strings. The `text` vector should be in
+    /// row-major order with shape given by `shape`. Text strings are interpreted as Markdown.
+    ///
+    /// # Panics
+    ///
+    /// In `cfg(debug)`, panics if the product of `shape` does not equal `text.len()`.
+    pub fn text_ndarray<T: AsRef<[u8]>>(self, tag: &str, text: &[T], shape: &[usize]) -> Self {
+        let string_val = text
+            .iter()
+            .map(|t| prost::bytes::Bytes::copy_from_slice(t.as_ref()))
+            .collect();
+        self.text_ndarray_mono(tag, string_val, shape)
+    }
+
+    fn text_ndarray_mono(
+        self,
+        tag: &str,
+        string_val: Vec<prost::bytes::Bytes>,
+        shape: &[usize],
+    ) -> Self {
+        let mut tensor = pb::TensorProto::default();
+
+        // Check dimensions.
+        if cfg!(debug) {
+            let dim_product = shape
+                .iter()
+                .map(|&d| d as i64)
+                .try_fold(1i64, |x, y| x.checked_mul(y));
+            match dim_product {
+                Some(n) if n == string_val.len() as i64 => (),
+                None => panic!("bad shape: dimension product overflowed"),
+                Some(n) => {
+                    panic!(
+                        "bad shape: dimension product is {} but vector has length {}",
+                        n,
+                        string_val.len()
+                    );
+                }
+            }
+        }
+
+        tensor.tensor_shape = Some({
+            let mut shape_pb = pb::TensorShapeProto::default();
+            shape_pb.dim = shape
+                .iter()
+                .map(|&d| pb::tensor_shape_proto::Dim {
+                    size: d as i64,
+                    ..Default::default()
+                })
+                .collect();
+            shape_pb
+        });
+
+        tensor.dtype = pb::DataType::DtString.into();
+        tensor.string_val = string_val;
+
+        let mut meta = pb::SummaryMetadata::default();
+        const TEXT_PLUGIN_NAME: &str = "text";
+        meta.plugin_data = Some(pb::summary_metadata::PluginData {
+            plugin_name: TEXT_PLUGIN_NAME.to_string(),
+            content: Default::default(),
+        });
+
+        self.build_value(tag, InnerValue::Tensor(tensor), Some(meta))
     }
 
     /// Adds a histogram summary, linearly bucketing the given `values` into the given number of
@@ -92,6 +167,6 @@ impl SummaryBuilder {
             // `histo` has other fields, like `sum` and `sum_squares`,
             // but they don't actually matter :^)
         }
-        self.tag_and_inner_value(tag, InnerValue::Histo(histo))
+        self.build_value(tag, InnerValue::Histo(histo), None)
     }
 }
