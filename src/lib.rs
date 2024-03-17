@@ -53,15 +53,13 @@
 //! (See also `examples/simple.rs` for a script that you can run.)
 //!
 //! ```no_run
-//! use std::fs::File;
-//! use std::io::{BufWriter, Write};
 //! use std::time::SystemTime;
 //!
 //! use tensorboard_writer::{TensorboardWriter, SummaryBuilder};
 //!
 //! # fn main() -> std::io::Result<()> {
-//! let file = File::create("run_123/tfevents.TIMESTAMP")?;
-//! let mut writer = TensorboardWriter::new(BufWriter::new(file));
+//! let mut writer = TensorboardWriter::new("run_123")?;
+//! // ^ creates a new tfevents file in a (possibly new) run_123/ directory
 //!
 //! writer.write_file_version()?;
 //!
@@ -72,9 +70,9 @@
 //!         .histogram("weights", 30, &[0.123, 0.234, 0.345])
 //!         .build();
 //!     writer.write_summary(SystemTime::now(), step, summ)?;
-//!     // flush the underlying `BufWriter` at each step
+//!     // flush the underlying buffered writer at each step
 //!     // so that results show up in TensorBoard immediately
-//!     writer.get_mut().flush()?;
+//!     writer.flush()?;
 //! }
 //! # Ok(())
 //! # }

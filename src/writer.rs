@@ -1,4 +1,8 @@
-use std::io::{self, Write};
+use std::ffi::OsString;
+use std::fs::File;
+use std::io::{self, BufWriter, Write};
+use std::path::Path;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::SystemTime;
 
 use prost::Message;
@@ -16,8 +20,50 @@ pub struct Writer<W> {
     writer: W,
 }
 
+static GLOBAL_UID: AtomicU64 = AtomicU64::new(0);
+
+/// Creates a unique name for an event file, incorporating sources of entropy including the
+/// timestamp, hostname, process ID, and a per-process global counter.
+fn event_file_name() -> OsString {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |dt| dt.as_secs());
+    let hostname = hostname::get().unwrap_or_default();
+    let pid = std::process::id();
+    let uid = GLOBAL_UID.fetch_add(1, Ordering::Relaxed);
+
+    let mut result = OsString::from(format!("events.out.tfevents.{now:010}."));
+    result.push(hostname);
+    result.push(format!(".{pid}.{uid}"));
+    result
+}
+
+impl Writer<BufWriter<File>> {
+    /// Creates a new TensorBoard event file in the given run directory.
+    ///
+    /// The run directory and its ancestors will be created if they do not exist.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the run directory cannot be created, or in the unlikely event that the newly
+    /// chosen name for the event file is already taken.
+    pub fn new<P: AsRef<Path>>(run_directory: P) -> io::Result<Self> {
+        let run_directory = run_directory.as_ref();
+        std::fs::create_dir_all(run_directory)?;
+        let filename = run_directory.join(event_file_name());
+        let file = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create_new(true)
+            .open(filename)?;
+        Ok(Self::wrap(BufWriter::new(file)))
+    }
+}
+
 impl<W> Writer<W> {
-    pub fn new(writer: W) -> Self {
+    /// Wraps an existing writer object. Usually you will want to use [`Writer::new`]; this method
+    /// is appropriate if not writing to a file.
+    pub fn wrap(writer: W) -> Self {
         Self { writer }
     }
 
@@ -45,6 +91,11 @@ fn time_f64(time: SystemTime) -> std::io::Result<f64> {
 }
 
 impl<W: Write> Writer<W> {
+    /// [Flushes][std::io::Write::flush] the underlying writer.
+    pub fn flush(&mut self) -> io::Result<()> {
+        self.writer.flush()
+    }
+
     /// Writes a raw TFRecord to the output stream. You may find it more convenient to use
     /// [`write_event`][Self::write_event] instead, which computes the record checksum for you.
     pub fn write_record(&mut self, record: &TfRecord) -> io::Result<()> {

@@ -1,5 +1,4 @@
-use std::fs::File;
-use std::io::{BufWriter, Write};
+use std::io::Write;
 use std::time::{Duration, SystemTime};
 
 use rand::prelude::*;
@@ -7,17 +6,13 @@ use rand::prelude::*;
 use tensorboard_writer::{SummaryBuilder, TensorboardWriter};
 
 fn main() -> std::io::Result<()> {
-    let outfile = std::env::args_os().nth(1).unwrap_or_else(|| {
-        eprintln!("fatal: specify OUTFILE as first argument");
+    let rundir = std::env::args_os().nth(1).unwrap_or_else(|| {
+        eprintln!("fatal: specify RUNDIR as first argument");
         std::process::exit(1);
     });
-    if !outfile.to_string_lossy().contains("tfevents") {
-        eprintln!("warn: filenames must include 'tfevents' to show up in TensorBoard");
-    }
 
-    // Open a file and bind a writer to it.
-    let writer = BufWriter::new(File::create(outfile)?);
-    let mut writer = TensorboardWriter::new(writer);
+    // Open a new event file writer.
+    let mut writer = TensorboardWriter::new(rundir)?;
 
     // Write a file header---not strictly necessary, but useful for troubleshooting.
     writer.write_file_version()?;
